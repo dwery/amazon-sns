@@ -1,0 +1,277 @@
+package Amazon::SNS;
+
+use strict;
+use warnings;
+
+use base qw/ Class::Accessor::Fast /;
+
+__PACKAGE__->mk_accessors(qw/ key secret error service debug /);
+
+use LWP::UserAgent;
+use XML::Simple;
+use Net::Amazon::AWSSign;
+
+our $VERSION = '1.1';
+
+
+sub CreateTopic
+{
+	my ($self, $name) = @_;
+
+	my $r = $self->dispatch({
+		'Action'	=> 'CreateTopic',
+		'Name'		=> $name,
+	});
+
+	my $arn = eval { $r->{'CreateTopicResult'}{'TopicArn'} };
+
+	return defined $arn ? $self->GetTopic($arn) : undef;
+}
+
+sub GetTopic
+{
+	my ($self, $arn) = @_;
+
+	return Amazon::SNS::Topic->new({
+		'sns' => $self,
+		'arn' => $arn,
+	});
+}
+
+sub DeleteTopic
+{
+	my ($self, $arn) = @_;
+
+	return $self->dispatch({
+		'Action'	=> 'DeleteTopic',
+		'TopicArn'	=> $arn,
+	});
+}
+
+sub ListTopics
+{
+	my ($self, $name) = @_;
+
+	my $r = $self->dispatch({
+		'Action'	=> 'ListTopics',
+	});
+
+	return map {
+
+		Amazon::SNS::Topic->new({
+			'sns' => $self,
+			'arn' => $_->{'TopicArn'},
+		})
+
+	} @{$r->{'ListTopicsResult'}{'Topics'}[0]{'member'}};
+}
+
+
+sub dispatch
+{
+	my ($self, $args) = @_;
+
+	$self->error(undef);
+
+	$self->service('http://sns.eu-west-1.amazonaws.com')
+		unless defined $self->service;
+
+	# build URI
+	my $uri = $self->service . '/?'
+		. join('&', map { $_ . '=' . $args->{$_} } keys %$args );
+
+	# sign
+	$uri = Net::Amazon::AWSSign
+			->new($self->key, $self->secret)
+			->addRESTSecret($uri);
+
+	# send
+	my $response = LWP::UserAgent->new->get($uri);
+
+        if ($response->is_success) {
+		return XMLin($response->content,
+				'SuppressEmpty' => 1,
+#				'KeyAttr' => { },
+				'ForceArray' => [ qw/ Topics member / ],
+		);
+        } else {
+		#print $response->content, "\n";
+		$self->error(
+			($response->content =~ /^<.+>/)
+				? eval { XMLin($response->content)->{'Error'}{'Message'} || $response->status_line }
+				: $response->status_line
+		);
+        }
+
+	print STDERR 'ERROR: ', $self->error, "\n"
+		if $self->debug;
+
+	return undef;
+}
+
+1;
+
+package Amazon::SNS::Topic;
+
+use strict;
+use warnings;
+
+use base qw(Class::Accessor);
+
+__PACKAGE__->mk_accessors(qw/ sns arn /);
+
+sub Publish
+{
+	my ($self, $msg, $subj) = @_;
+
+	# XXX croak on invalid arn
+
+	my $r = $self->sns->dispatch({
+		'Action'	=> 'Publish',
+		'TopicArn'	=> $self->arn,
+		'Message'	=> $msg,
+	});
+
+	# XXX add subj support
+
+	# return message id on success, undef on error
+	return $r ? $r->{'PublishResult'}{'MessageId'} : undef;
+}
+
+sub DeleteTopic
+{
+	my ($self) = @_;
+
+	return $self->sns->DeleteTopic($self->arn);
+}
+
+1;
+
+=head1 NAME
+
+Amazon::SNS - Amazon Simple Notification Service made simpler
+
+=head1 SYNOPSIS
+
+  use Amazon::SNS;
+
+  my $sns = Amazon::SNS->new({'key' => '...', 'secret' => '...'});
+
+
+  # create a new topic and publish
+
+  my $topic = $sns->CeateTopic('MyTopic')
+	or die $sns->error;
+
+  $topic->Publish('My test message');
+
+
+  # delete it!
+
+  $topic->DeleteTopic;
+
+
+  # publish to a known ARN
+
+  my $topic = $sns->GetTopic('arn:aws:sns:eu-west-1:123456789099:MyTopic');
+
+  $topic->Publish('My test message');
+
+
+  # get all topics
+
+  my @topics = $sns->ListTopics;
+
+  print $_->arn, "\n" for @topics;
+
+
+ 
+  # change region
+
+  $sns->service('http://sns.us-east-1.amazonaws.com');
+
+=head1 DESCRIPTION
+
+Sorry for not providing a better documentation, patches are always accepted. ;)
+
+=head1 METHODS
+
+=over
+
+=item Amazon::SNS->new('key' => '...', 'secret' => '...')
+
+	Creates an Amazon::SNS object with given key and secret.
+
+=item $sns->GetTopic($arn)
+
+	Gives you an Amazon::SNS::Topic object using an existing ARN.
+
+=item $sns->CreateTopic($name)
+
+	Gives you an Amazon::SNS::Topic object with the given name, creating it 
+	if it does not already exist in your Amazon SNS account.
+	
+=item $sns->DeleteTopic($arn)
+
+	Deletes a topic using its ARN.
+
+=item $sns->ListTopics
+
+	The result is a list of all the topics in your account, as an array of Amazon::SNS::Topic objects.
+
+=item $sns->error
+
+	Description of the last error, or undef if none.
+
+=back
+
+=head1 ATTRIBUTES
+
+=over
+
+=item $sns->service
+
+=item $sns->service($service_url)
+
+	Get/set SNS service url, something like 'http://sns.us-east-1.amazonaws.com'.
+
+=item $sns->key
+
+=item $sns->key('...')
+
+	Get/set auth key.
+
+=item $sns->secret
+
+=item $sns->secret('...')
+
+	Get/set secret.
+	
+=item $sns->debug
+
+=item $sns->debug(1)
+
+	Get/set debug level. When set to 1 you'll get some debug output on STDERR.
+
+=back
+
+=head1 NOTES
+
+Be sure to use ARNs in the same region as you have set the service to.
+
+The module defaults to the EU (Ireland) region.
+
+
+=head1 AUTHOR
+
+Alessandro Zummo, E<lt>a.zummo@towertech.itE<gt>
+
+=head1 COPYRIGHT AND LICENSE
+
+Copyright (C) 2011 by Alessandro Zummo
+
+This program is free software; you can redistribute it and/or
+modify it under the terms of the GNU General Public License version 2 as
+published by the Free Software Foundation.
+
+=cut

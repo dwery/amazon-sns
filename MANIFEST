@@ -1,0 +1,5 @@
+MANIFEST
+AUTHORS
+ChangeLog
+lib/Amazon/SNS.pm
+Makefile.PL
