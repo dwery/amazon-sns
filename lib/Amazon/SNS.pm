@@ -155,7 +155,7 @@ Amazon::SNS - Amazon Simple Notification Service made simpler
 
   use Amazon::SNS;
 
-  my $sns = Amazon::SNS->new({'key' => '...', 'secret' => '...'});
+  my $sns = Amazon::SNS->new({ 'key' => '...', 'secret' => '...' });
 
 
   # create a new topic and publish
@@ -198,7 +198,7 @@ Sorry for not providing a better documentation, patches are always accepted. ;)
 
 =over
 
-=item Amazon::SNS->new('key' => '...', 'secret' => '...')
+=item Amazon::SNS->new({ 'key' => '...', 'secret' => '...' })
 
 	Creates an Amazon::SNS object with given key and secret.
 
