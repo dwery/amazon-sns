@@ -126,13 +126,13 @@ sub Publish
 
 	# XXX croak on invalid arn
 
-	my $r = $self->sns->dispatch({
+	my $args = {
 		'Action'	=> 'Publish',
 		'TopicArn'	=> $self->arn,
 		'Message'	=> $msg,
-	});
-
-	# XXX add subj support
+	};
+	$args->{Subject} = $subj if $subj;
+	my $r = $self->sns->dispatch($args);
 
 	# return message id on success, undef on error
 	return $r ? $r->{'PublishResult'}{'MessageId'} : undef;
