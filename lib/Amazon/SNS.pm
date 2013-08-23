@@ -90,7 +90,7 @@ sub dispatch
 	my $uri = URI->new($self->service);
 
 	$uri->path('/');
-	$uri->query(join('&', map { $_ . '=' . URI::Escape::uri_escape($args->{$_}, '^A-Za-z0-9\-_.~') } sort keys %$args ));
+	$uri->query(join('&', map { $_ . '=' . URI::Escape::uri_escape_utf8($args->{$_}, '^A-Za-z0-9\-_.~') } sort keys %$args ));
 
 	# create signature
 	$args->{'Signature'} = hmac_sha256_base64(join("\n", 'POST', $uri->host, $uri->path, $uri->query), $self->secret);
@@ -101,7 +101,7 @@ sub dispatch
 	}
 
 	# rewrite query string
-	$uri->query(join('&', map { $_ . '=' . URI::Escape::uri_escape($args->{$_}, '^A-Za-z0-9\-_.~') } sort keys %$args ));
+	$uri->query(join('&', map { $_ . '=' . URI::Escape::uri_escape_utf8($args->{$_}, '^A-Za-z0-9\-_.~') } sort keys %$args ));
 
 	my $response = LWP::UserAgent->new->post($self->service, 'Content' => $uri->query);
 
