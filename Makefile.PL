@@ -10,8 +10,9 @@ WriteMakefile(
 	PREREQ_PM	=> {
 				'LWP::UserAgent'	=> 0,
 				'XML::Simple'		=> 0,
-				'Net::Amazon::AWSSign'	=> 0,
 				'Class::Accessor::Fast'	=> 0,
+				'URI::Escape'		=> 0,
+				'JSON'			=> 0,
 			},			
 );
 
