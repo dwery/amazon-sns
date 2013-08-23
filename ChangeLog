@@ -1,2 +1,16 @@
+2013-08-24 Alessandro Zummo
+	* v1.2
+
+	* add utf8 support
+
+	* use POST instead of GET, as a side-effect internal signing
+	has been implemented and thus Net::Amazon::AWSSign
+	is no more required.
+
+	* support different messages for different destinations, the $message
+	parameter must be an hashref
+
+	* support Subject in the Publish method
+
 2011-01-29 Alessandro Zummo
 	* First release
