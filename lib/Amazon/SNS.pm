@@ -121,6 +121,8 @@ use warnings;
 
 use base qw(Class::Accessor);
 
+use JSON;
+
 __PACKAGE__->mk_accessors(qw/ sns arn /);
 
 sub Publish
@@ -129,11 +131,22 @@ sub Publish
 
 	# XXX croak on invalid arn
 
+	my $structure = undef;
+
+	# support JSON payload
+	if (ref($msg) eq 'HASH') {
+
+		$structure = 'json';
+		$msg = encode_json($msg);
+	}
+
+
 	my $r = $self->sns->dispatch({
-		'Action'	=> 'Publish',
-		'TopicArn'	=> $self->arn,
-		'Message'	=> $msg,
-		'Subject'	=> $subj,
+		'Action'		=> 'Publish',
+		'TopicArn'		=> $self->arn,
+		'Message'		=> $msg,
+		'MessageStructure'	=> $structure,
+		'Subject'		=> $subj,
 	});
 
 	# return message id on success, undef on error
