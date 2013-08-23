@@ -76,6 +76,9 @@ sub dispatch
 	$self->service('http://sns.eu-west-1.amazonaws.com')
 		unless defined $self->service;
 
+	# sanitize args
+	do { delete $args->{$_} unless defined $args->{$_} } for (keys %$args);
+
 	# build URI
 	my $uri = $self->service . '/?'
 		. join('&', map { $_ . '=' . $args->{$_} } keys %$args );
@@ -130,9 +133,8 @@ sub Publish
 		'Action'	=> 'Publish',
 		'TopicArn'	=> $self->arn,
 		'Message'	=> $msg,
+		'Subject'	=> $subj,
 	});
-
-	# XXX add subj support
 
 	# return message id on success, undef on error
 	return $r ? $r->{'PublishResult'}{'MessageId'} : undef;
