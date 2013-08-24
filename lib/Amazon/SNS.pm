@@ -197,7 +197,7 @@ Amazon::SNS - Amazon Simple Notification Service made simpler
 
   # create a new topic and publish
 
-  my $topic = $sns->CeateTopic('MyTopic')
+  my $topic = $sns->CreateTopic('MyTopic')
 	or die $sns->error;
 
   $topic->Publish('My test message');
@@ -212,7 +212,7 @@ Amazon::SNS - Amazon Simple Notification Service made simpler
 
   my $topic = $sns->GetTopic('arn:aws:sns:eu-west-1:123456789099:MyTopic');
 
-  $topic->Publish('My test message');
+  $topic->Publish('My test message', 'My Subject');
 
 
   # get all topics
