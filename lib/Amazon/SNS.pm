@@ -5,7 +5,7 @@ use warnings;
 
 use base qw/ Class::Accessor::Fast /;
 
-__PACKAGE__->mk_accessors(qw/ key secret error service debug /);
+__PACKAGE__->mk_accessors(qw/ key secret error status_code service debug /);
 
 use LWP::UserAgent;
 use XML::Simple;
@@ -104,6 +104,8 @@ sub dispatch
 	$uri->query(join('&', map { $_ . '=' . URI::Escape::uri_escape_utf8($args->{$_}, '^A-Za-z0-9\-_.~') } sort keys %$args ));
 
 	my $response = LWP::UserAgent->new->post($self->service, 'Content' => $uri->query);
+
+	$self->status_code = $response->code;
 
         if ($response->is_success) {
 		return XMLin($response->content,
@@ -259,6 +261,10 @@ Sorry for not providing a better documentation, patches are always accepted. ;)
 =item $sns->error
 
 	Description of the last error, or undef if none.
+
+=item $sns->status_code
+
+	The status code of the last HTTP response.
 
 =back
 
