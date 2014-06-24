@@ -12,7 +12,7 @@ use XML::Simple;
 use URI::Escape;
 use Digest::SHA qw(hmac_sha256_base64);
 
-our $VERSION = '1.2';
+our $VERSION = '1.3';
 
 
 sub CreateTopic
@@ -85,6 +85,7 @@ sub dispatch
 	$args->{'AWSAccessKeyId'} = $self->key;
 	$args->{'SignatureVersion'} = 2;
 	$args->{'SignatureMethod'} = 'HmacSHA256';
+	$args->{'Version'} = '2010-03-31';
 
 	# build URI
 	my $uri = URI->new($self->service);
