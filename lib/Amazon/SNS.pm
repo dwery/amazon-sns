@@ -106,7 +106,7 @@ sub dispatch
 
 	my $response = LWP::UserAgent->new->post($self->service, 'Content' => $uri->query);
 
-	$self->status_code = $response->code;
+	$self->status_code( $response->code );
 
         if ($response->is_success) {
 		return XMLin($response->content,
