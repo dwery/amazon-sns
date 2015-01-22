@@ -12,7 +12,7 @@ use XML::Simple;
 use URI::Escape;
 use Digest::SHA qw(hmac_sha256_base64);
 
-our $VERSION = '1.2';
+our $VERSION = '1.2.1';
 
 
 sub CreateTopic
@@ -34,6 +34,16 @@ sub GetTopic
 	my ($self, $arn) = @_;
 
 	return Amazon::SNS::Topic->new({
+		'sns' => $self,
+		'arn' => $arn,
+	});
+}
+
+sub GetTarget
+{
+	my ($self, $arn) = @_;
+
+	return Amazon::SNS::Target->new({
 		'sns' => $self,
 		'arn' => $arn,
 	});
@@ -85,6 +95,13 @@ sub dispatch
 	$args->{'AWSAccessKeyId'} = $self->key;
 	$args->{'SignatureVersion'} = 2;
 	$args->{'SignatureMethod'} = 'HmacSHA256';
+
+	if (defined($args->{'Attributes'}) and ref($args->{'Attributes'}) eq 'HASH') {
+	    foreach my $attr (keys %{$args->{'Attributes'}}) {
+		$args->{$attr} = $args->{'Attributes'}->{$attr};
+	    }
+	    delete $args->{'Attributes'};
+	}
 
 	# build URI
 	my $uri = URI->new($self->service);
@@ -186,6 +203,64 @@ sub DeleteTopic
 
 1;
 
+
+package Amazon::SNS::Target;
+
+use strict;
+use warnings;
+
+use base qw(Class::Accessor);
+
+use JSON;
+
+__PACKAGE__->mk_accessors(qw/ sns arn /);
+
+sub Publish
+{
+	my ($self, $msg, $subj, $attr) = @_;
+
+	# XXX croak on invalid arn
+
+	my $structure = undef;
+	my $attributes = undef;
+
+	# support JSON payload
+	if (ref($msg) eq 'HASH') {
+
+		$structure = 'json';
+		$msg = encode_json($msg);
+	}
+
+	if (defined($attr) and ref($attr) eq 'HASH') {
+	    my $i = 1;
+	    foreach my $key (keys %$attr) {
+		$attributes->{"MessageAttributes.entry.$i.Name"} = $key;
+		$attributes->{"MessageAttributes.entry.$i.Value.DataType"} = $attr->{$key}->{'Type'};
+		if($attr->{$key}->{'Type'} eq 'Binary') {
+		    $attributes->{"MessageAttributes.entry.$i.Value.BinaryValue"} = $attr->{$key}->{'Value'};
+		} else {
+		    $attributes->{"MessageAttributes.entry.$i.Value.StringValue"} = $attr->{$key}->{'Value'};
+		}
+		$i++;
+	    }
+	}
+
+	my $r = $self->sns->dispatch({
+		'Action'		=> 'Publish',
+		'TargetArn'		=> $self->arn,
+		'Message'		=> $msg,
+		'MessageStructure'	=> $structure,
+		'Subject'		=> $subj,
+		'Attributes'		=> $attributes,
+	});
+
+	# return message id on success, undef on error
+	return $r ? $r->{'PublishResult'}{'MessageId'} : undef;
+}
+
+1;
+
+
 =head1 NAME
 
 Amazon::SNS - Amazon Simple Notification Service made simpler
@@ -244,6 +319,16 @@ Sorry for not providing a better documentation, patches are always accepted. ;)
 =item $sns->GetTopic($arn)
 
 	Gives you an Amazon::SNS::Topic object using an existing ARN.
+
+=item $sns->GetTarget($arn)
+
+	Gives you an Amazon::SNS::Target object using an existing ARN. Sending Notification to TargetArn instead of TopicArn.
+
+=item $sns->Publish($message, $subject, $attributes) (Amazon::SNS::Target)
+
+	When used with Amazon::SNS::Target object (see GetTarget), additional parameter $attributes is used to pass MessageAttributes.entry.N attributes with message.
+	An example of MobilePush TTL: $attributes = {"AWS.SNS.MOBILE.APNS.TTL" => {"Type" => "String", "Value" => 3600}};
+	More information can be found on Amazon web site: http://docs.aws.amazon.com/sns/latest/dg/sns-ttl.html
 
 =item $sns->CreateTopic($name)
 
