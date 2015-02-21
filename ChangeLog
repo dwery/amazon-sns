@@ -1,3 +1,11 @@
+2015-02-21 David Ihnen
+	* v1.2.2
+	* add required version (2010-03-31) field to packets
+
+2015-01-22 Sergey Basmanov
+	* v1.2.1
+	* Added SNS::Target and MobileAttributes
+
 2013-08-24 Alessandro Zummo
 	* v1.2
 

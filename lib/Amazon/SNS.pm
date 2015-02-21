@@ -12,7 +12,7 @@ use XML::Simple;
 use URI::Escape;
 use Digest::SHA qw(hmac_sha256_base64);
 
-our $VERSION = '1.2.1';
+our $VERSION = '1.2.2';
 
 
 sub CreateTopic
@@ -95,6 +95,7 @@ sub dispatch
 	$args->{'AWSAccessKeyId'} = $self->key;
 	$args->{'SignatureVersion'} = 2;
 	$args->{'SignatureMethod'} = 'HmacSHA256';
+	$args->{'Version'} = '2010-03-31';
 
 	if (defined($args->{'Attributes'}) and ref($args->{'Attributes'}) eq 'HASH') {
 	    foreach my $attr (keys %{$args->{'Attributes'}}) {
@@ -122,7 +123,7 @@ sub dispatch
 
 	my $response = LWP::UserAgent->new->post($self->service, 'Content' => $uri->query);
 
-	$self->status_code = $response->code;
+	$self->status_code( $response->code );
 
         if ($response->is_success) {
 		return XMLin($response->content,
