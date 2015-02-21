@@ -98,10 +98,10 @@ sub dispatch
 	$args->{'Version'} = '2010-03-31';
 
 	if (defined($args->{'Attributes'}) and ref($args->{'Attributes'}) eq 'HASH') {
-	    foreach my $attr (keys %{$args->{'Attributes'}}) {
-		$args->{$attr} = $args->{'Attributes'}->{$attr};
-	    }
-	    delete $args->{'Attributes'};
+		foreach my $attr (keys %{$args->{'Attributes'}}) {
+			$args->{$attr} = $args->{'Attributes'}->{$attr};
+		}
+		delete $args->{'Attributes'};
 	}
 
 	# build URI
@@ -123,22 +123,22 @@ sub dispatch
 
 	my $response = LWP::UserAgent->new->post($self->service, 'Content' => $uri->query);
 
-	$self->status_code( $response->code );
+	$self->status_code($response->code);
 
-        if ($response->is_success) {
+	if ($response->is_success) {
 		return XMLin($response->content,
 				'SuppressEmpty' => 1,
 #				'KeyAttr' => { },
 				'ForceArray' => [ qw/ Topics member / ],
 		);
-        } else {
+	} else {
 		print $response->content, "\n";
 		$self->error(
 			($response->content =~ /^<.+>/)
 				? eval { XMLin($response->content)->{'Error'}{'Message'} || $response->status_line }
 				: $response->status_line
 		);
-        }
+	}
 
 	print STDERR 'ERROR: ', $self->error, "\n"
 		if $self->debug;
@@ -233,17 +233,22 @@ sub Publish
 	}
 
 	if (defined($attr) and ref($attr) eq 'HASH') {
-	    my $i = 1;
-	    foreach my $key (keys %$attr) {
-		$attributes->{"MessageAttributes.entry.$i.Name"} = $key;
-		$attributes->{"MessageAttributes.entry.$i.Value.DataType"} = $attr->{$key}->{'Type'};
-		if($attr->{$key}->{'Type'} eq 'Binary') {
-		    $attributes->{"MessageAttributes.entry.$i.Value.BinaryValue"} = $attr->{$key}->{'Value'};
-		} else {
-		    $attributes->{"MessageAttributes.entry.$i.Value.StringValue"} = $attr->{$key}->{'Value'};
+
+		my $i = 1;
+
+		foreach my $key (keys %$attr) {
+
+			$attributes->{"MessageAttributes.entry.$i.Name"} = $key;
+			$attributes->{"MessageAttributes.entry.$i.Value.DataType"} = $attr->{$key}->{'Type'};
+
+			if($attr->{$key}->{'Type'} eq 'Binary') {
+				$attributes->{"MessageAttributes.entry.$i.Value.BinaryValue"} = $attr->{$key}->{'Value'};
+			} else {
+				$attributes->{"MessageAttributes.entry.$i.Value.StringValue"} = $attr->{$key}->{'Value'};
+			}
+
+			$i++;
 		}
-		$i++;
-	    }
 	}
 
 	my $r = $self->sns->dispatch({
@@ -397,7 +402,7 @@ Alessandro Zummo, E<lt>a.zummo@towertech.itE<gt>
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright (C) 2011 by Alessandro Zummo
+Copyright (C) 2011-15 Alessandro Zummo
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License version 2 as
