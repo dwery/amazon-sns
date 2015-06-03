@@ -77,6 +77,27 @@ sub ListTopics
 	} @{$r->{'ListTopicsResult'}{'Topics'}[0]{'member'}};
 }
 
+sub Subscribe
+{
+	my ($self, $protocol, $arn, $endpoint_arn) = @_;
+
+	$self->dispatch({
+		'Action'	=> 'Subscribe',
+		'Protocal'	=> $protocal,
+		'TopicArn'	=> $arn,
+		'Endpoint'	=> $endpoint_arn,
+	});
+}
+
+sub Unsubscribe
+{
+	my ($self, $arn) = @_;
+
+	$self->dispatch({
+		'Action'		=> 'Unsubscribe',
+		'SubscriptionArn'	=> $arn,
+	});
+}
 
 sub dispatch
 {
