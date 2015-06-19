@@ -1,6 +1,10 @@
+2015-06-20
+	* v1.3
+	* Added Subscribe, Unsubscribe
+
 2015-02-21 David Ihnen
 	* v1.2.2
-	* add required version (2010-03-31) field to packets
+	* Add required version (2010-03-31) field to packets
 
 2015-01-22 Sergey Basmanov
 	* v1.2.1
