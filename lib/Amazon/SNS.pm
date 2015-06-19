@@ -79,13 +79,13 @@ sub ListTopics
 
 sub Subscribe
 {
-	my ($self, $protocol, $arn, $endpoint_arn) = @_;
+	my ($self, $protocol, $topicarn, $endpoint) = @_;
 
 	$self->dispatch({
 		'Action'	=> 'Subscribe',
-		'Protocal'	=> $protocal,
-		'TopicArn'	=> $arn,
-		'Endpoint'	=> $endpoint_arn,
+		'Protocol'	=> $protocol,
+		'TopicArn'	=> $topicarn,
+		'Endpoint'	=> $endpoint,
 	});
 }
 
