@@ -12,7 +12,7 @@ use XML::Simple;
 use URI::Escape;
 use Digest::SHA qw(hmac_sha256_base64);
 
-our $VERSION = '1.2.2';
+our $VERSION = '1.3';
 
 
 sub CreateTopic
