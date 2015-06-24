@@ -200,7 +200,7 @@ sub Publish
 	if (ref($msg) eq 'HASH') {
 
 		$structure = 'json';
-		$msg = encode_json($msg);
+		$msg = to_json($msg);
 	}
 
 
@@ -250,7 +250,7 @@ sub Publish
 	if (ref($msg) eq 'HASH') {
 
 		$structure = 'json';
-		$msg = encode_json($msg);
+		$msg = to_json($msg);
 	}
 
 	if (defined($attr) and ref($attr) eq 'HASH') {
