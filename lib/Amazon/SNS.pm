@@ -29,6 +29,20 @@ sub CreateTopic
 	return defined $arn ? $self->GetTopic($arn) : undef;
 }
 
+sub CreatePlatformEndpoint {
+	my ($self, $token, $PlatformApplicationArn) = @_;
+
+	my $r = $self->dispatch({
+		'Action' => 'CreatePlatformEndpoint',
+		'Token' => $token,
+		'PlatformApplicationArn' => $PlatformApplicationArn,
+	});
+
+	my $arn = eval { $r->{'CreatePlatformEndpointResult'}{'EndpointArn'} };
+
+	return defined $arn ? $self->GetTarget($arn) : undef;
+}
+
 sub GetTopic
 {
 	my ($self, $arn) = @_;
