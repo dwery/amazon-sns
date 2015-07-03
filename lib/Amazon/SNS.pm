@@ -63,6 +63,22 @@ sub GetTarget
 	});
 }
 
+sub GetEndpointAttributes
+{
+	my ($self, $arn) = @_;
+
+	my $r = $self->dispatch({
+		'Action' => 'GetEndpointAttributes',
+		'EndpointArn' => $arn,
+	});
+
+	my $entry = $r->{'GetEndpointAttributesResult'}{'Attributes'}{'entry'};
+
+	return map {
+		$_ => $entry->{$_}->{value}
+	} keys %{$entry};
+}
+
 sub DeleteTopic
 {
 	my ($self, $arn) = @_;
@@ -70,6 +86,16 @@ sub DeleteTopic
 	return $self->dispatch({
 		'Action'	=> 'DeleteTopic',
 		'TopicArn'	=> $arn,
+	});
+}
+
+sub DeleteEndpoint
+{
+	my ($self, $endpointarn) = @_;
+
+	return $self->dispatch({
+		'Action'	=> 'DeleteEndpoint',
+		'EndpointArn'	=> $endpointarn,
 	});
 }
 
