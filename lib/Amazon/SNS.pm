@@ -73,6 +73,16 @@ sub DeleteTopic
 	});
 }
 
+sub DeleteEndpoint
+{
+	my ($self, $endpointarn) = @_;
+
+	return $self->dispatch({
+		'Action'	=> 'DeleteEndpoint',
+		'EndpointArn'	=> $endpointarn,
+	});
+}
+
 sub ListTopics
 {
 	my ($self, $name) = @_;
@@ -250,6 +260,52 @@ use base qw(Class::Accessor);
 use JSON;
 
 __PACKAGE__->mk_accessors(qw/ sns arn /);
+
+sub GetEndpointAttributes
+{
+	my ($self) = @_;
+
+	my $r = $self->sns->dispatch({
+		'Action' => 'GetEndpointAttributes',
+		'EndpointArn' => $self->arn,
+	});
+
+	my $entry = $r->{'GetEndpointAttributesResult'}{'Attributes'}{'entry'};
+
+	my %attributes = map {
+		$_ => $entry->{$_}->{value}
+	} keys %{$entry};
+
+	return \%attributes;
+}
+
+sub SetEndpointAttributes
+{
+	my ($self, $attr) = @_;
+
+	my $attributes = undef;
+
+	if (defined($attr) and ref($attr) eq 'HASH') {
+		my $i = 1;
+
+		foreach my $key (keys %$attr) {
+
+			$attributes->{"Attributes.entry.$i.key"} = $key;
+			$attributes->{"Attributes.entry.$i.value"} = $attr->{$key};
+
+			$i++;
+		}
+	}
+
+	my $r = $self->sns->dispatch({
+		'Action'		=> 'SetEndpointAttributes',
+		'Attributes'		=> $attributes,
+		'EndpointArn'		=> $self->arn,
+	});
+
+	# return message id on success, undef on error
+	return $r ? $r->{'ResponseMetadata'}{'RequestId'} : undef;
+}
 
 sub Publish
 {
