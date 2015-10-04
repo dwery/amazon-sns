@@ -11,9 +11,9 @@ use LWP::UserAgent;
 use XML::Simple;
 use URI::Escape;
 use Digest::SHA qw(hmac_sha256_base64);
+use Carp;
 
 our $VERSION = '1.3';
-
 
 sub CreateTopic
 {
@@ -156,23 +156,52 @@ sub dispatch
 	# rewrite query string
 	$uri->query(join('&', map { $_ . '=' . URI::Escape::uri_escape_utf8($args->{$_}, '^A-Za-z0-9\-_.~') } sort keys %$args ));
 
-	my $response = LWP::UserAgent->new->post($self->service, 'Content' => $uri->query);
 
-	$self->status_code($response->code);
+	my $response;
 
-	if ($response->is_success) {
-		return XMLin($response->content,
-				'SuppressEmpty' => 1,
-#				'KeyAttr' => { },
-				'ForceArray' => [ qw/ Topics member / ],
-		);
-	} else {
-		print $response->content, "\n";
+	# try three times, a status code of 200-299 will exit the loop
+	foreach my $try (1 .. 3) {
+
+		$response = LWP::UserAgent->new->post($self->service, 'Content' => $uri->query);
+		$self->status_code($response->code);
+
+		if ($response->is_success) {
+
+			if (defined $response->content && length($response->content)) {
+
+				print STDERR $response->content, "\n"
+					if $self->debug && $self->debug > 1;
+
+				return XMLin($response->content,
+						'SuppressEmpty' => 1,
+						#'KeyAttr' => { },
+						'ForceArray' => [ qw/ Topics member / ],
+				);
+
+			} else {
+				carp "received an empty answer";
+			}
+
+		} else {
+			print STDERR $response->code, ' ', $response->content, "\n"
+				if $self->debug;
+		}
+
+		sleep(1);
+	}
+
+	# we failed three times
+
+	if (defined $response->content && length($response->content)) {
+
 		$self->error(
 			($response->content =~ /^<.+>/)
 				? eval { XMLin($response->content)->{'Error'}{'Message'} || $response->status_line }
 				: $response->status_line
 		);
+
+	} else {
+		$self->error($response->status_line);
 	}
 
 	print STDERR 'ERROR: ', $self->error, "\n"
